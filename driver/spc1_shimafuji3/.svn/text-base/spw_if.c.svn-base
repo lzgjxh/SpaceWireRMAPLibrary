@@ -1,0 +1,184 @@
+#include "spw_if.h"
+
+spw_txclk_div txclk_div=TXSPD_10MBPS;
+int _BufferSize=8192;
+
+int spw_open(int portnumber)
+{
+	ER er;
+	UW data;
+	int asize;
+	int dd;
+	if(portnumber==1){
+		dd = tk_opn_dev((UB*)"spwa", TD_UPDATE);
+	}else if(portnumber==2){
+		dd = tk_opn_dev((UB*)"spwb", TD_UPDATE);
+	}else if(portnumber==3){
+		dd = tk_opn_dev((UB*)"spwc", TD_UPDATE);
+	}else{
+		printf("open error : invalid port number\n");
+		return -1;
+	}
+
+	er = tk_srea_dev(dd, DN_SIGN, &data, sizeof(data), &asize);
+
+	spw_set_read_timeout(dd,1000);
+	spw_set_write_timeout(dd,1000);
+
+	if (er == E_PAR) printf("E_PAR");
+	else {
+		printf("fpga ver. = 0x%04x\n", (unsigned short)(0x0000ffff & data));
+	}
+
+	return dd;
+}
+
+int spw_close(int dd)
+{
+	if (dd > 0) {
+		return 0;
+		tk_cls_dev(dd, 0);
+	} else {
+		return 1;
+	}
+}
+
+
+int spw_connect(int dd)
+{
+	ER er;
+	UW data, div;
+	int asize;
+	int n;
+
+	printf("connecting ...\n");
+
+	data = ((UW)txclk_div << 8) & 0x00003f00;
+	data |= 0x00000001;
+	er = tk_swri_dev(dd, DN_LINKC, &data, sizeof(data), &asize);
+
+	for (n = 0; n < 100; n ++) {
+
+		slp_tsk(50);
+		er = tk_srea_dev(dd, DN_LINKS, &data, sizeof(data), &asize);
+		if (er == E_PAR) printf("spw_connect : E_PAR");
+		printf("status = 0x%08x\n", data);
+
+		if ((data & 0x0000001c) == 0x0000001c) {
+			printf("connected.\n");
+			return 0;
+		}
+		slp_tsk(100);
+	}
+	return 1;
+}
+
+int spw_read(int dd,UW *buf, UW *size)
+{
+//	printf("spw_read() invoked\n");
+	ER er;
+	int asize;
+
+	/*
+	 * check link here ?
+	 */
+
+	/// modified by Takayuki Yuasa 20080507
+	//er = tk_srea_dev(dd, 0, buf, 2048, &asize);
+	ID requestid;
+	ER ioer;
+	loop:
+	requestid = tk_rea_dev(dd, 0, buf, _BufferSize, TMO_FEVR);
+	if(requestid<0){
+		//printf("spw_read() wait\n");
+		goto loop;
+	}
+	//if (er == E_PAR) printf("E_PAR");
+	if(requestid<E_OK){printf("ERROR");}
+	er=tk_wai_dev(dd,requestid,&asize,&ioer,TMO_FEVR);
+	if (er == E_PAR) printf("E_PAR");
+
+
+	if (asize > 1024*1024) {
+		*size = asize;
+		return 1;
+	} else {
+		*size = asize;
+		return 0;
+	}
+}
+
+
+int spw_write(int dd,UW *buf, UW size)
+{
+	//printf("spw_write invoked\n");
+	ER er;
+	int asize;
+
+	/*
+	 * check link here ?
+	 */
+
+	er = tk_swri_dev(dd, 0, buf, size, &asize);
+	if (size == asize) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+int spw_send_timecode(int dd,unsigned char flag_and_timecode){
+	ER er;
+	UW data;
+	int asize;
+
+	data=0x00000000+flag_and_timecode;
+	er = tk_swri_dev(dd, DN_TIMIN, &data, sizeof(data), &asize);
+	return er;
+}
+
+int spw_get_timecode(int dd,unsigned char* flag_and_timecode){
+	ER er;
+	UW data;
+	int asize;
+
+	er = tk_srea_dev(dd, DN_TIMOUT, &data, 4, &asize);
+	*flag_and_timecode=data | 0x000000ff;
+	return er;
+}
+
+
+int spw_set_txspeed(int dd,spw_txclk_div new_txclk_div){
+	txclk_div=new_txclk_div;
+	return 0;
+}
+
+int spw_set_read_timeout(int dd,UW time_out){
+	ER er;
+	UW data;
+	int asize;
+
+	data = time_out;
+	er = tk_swri_dev(dd, DN_RXTMO, &data, sizeof(data), &asize);
+	if (asize != 4) {
+		printf("spw_set_read_timeout() size error asize=%d\n",asize);
+		return E_IO;
+	}
+	return er;
+}
+
+int spw_set_write_timeout(int dd,UW time_out)
+{
+	ER er;
+	UW data;
+	int asize;
+
+	data = time_out;
+	er = tk_swri_dev(dd, DN_TXTMO, &data, sizeof(data), &asize);
+	if (asize != 4) {
+		printf("spw_set_write_timeout() size error asize=%d\n",asize);
+		return E_IO;
+	}
+	return er;
+}
+

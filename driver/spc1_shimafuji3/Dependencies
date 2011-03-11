@@ -1,0 +1,13 @@
+spw_if.o: spw_if.c spw_if.h /usr/local/te/include/cpp/stdio.h \
+  /usr/local/te/include/cpp/stl/_prolog.h \
+  /usr/local/te/include/cpp/stl/_config.h \
+  /usr/local/te/include/cpp/stl_user_config.h \
+  /usr/local/te/include/cpp/stl/_config_compat.h \
+  /usr/local/te/include/cpp/stl/_site_config.h \
+  /usr/local/te/include/cpp/config/stlcomp.h \
+  /usr/local/te/include/cpp/config/stl_gcc.h \
+  /usr/local/te/include/cpp/config/stl_confix.h \
+  /usr/local/te/include/cpp/stl/support/_file3p.h \
+  /usr/local/te/include/cpp/stl/_epilog.h \
+  /usr/local/te/include/cpp/stl/_config_compat_post.h \
+  /usr/local/te/include/cpp/stdlib.h
