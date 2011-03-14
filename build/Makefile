@@ -29,4 +29,4 @@ t-kernel:
 
 clean:
 	$(MAKE) -C posix clean
-#	$(MAKE) -C t-kernel clean
+	$(MAKE) -C t-kernel clean

@@ -55,6 +55,7 @@ $(TARGET): $(OBJ)
 
 clean:
 	/bin/rm -f $(OBJ) $(TARGET) $(DEPS)
+	/bin/rm -f *.map
 
 # É\Å[ÉXÇÃàÀë∂ä÷åW
 ifdef DEPENDENCIES_OUTPUT
