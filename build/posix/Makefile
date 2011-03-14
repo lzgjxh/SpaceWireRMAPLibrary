@@ -12,7 +12,7 @@ SPACEWIRELIBRARY_SOURCE_PATH = $(SPACEWIRERMAPLIBRARY_PATH)/source_SpaceWireRMAP
 EXECUTABLE_SOURCE_PATH = $(SPACEWIRERMAPLIBRARY_PATH)/source_Executables
 USERPROGRAM_SOURCE_PATH = $(SPACEWIRERMAPLIBRARY_PATH)/source_UserPrograms
 THREADLIBRARY_SOURCE_PATH = $(SPACEWIRERMAPLIBRARY_PATH)/source_ThreadLibrary/$(SYSTEM_TYPE)
-IPSOCKETLIBRARY_SOURCE_PATH = $(SPACEWIRERMAPLIBRARY_PATH)/source_IPSocketLibrary
+IPSOCKETLIBRARY_SOURCE_PATH = $(SPACEWIRERMAPLIBRARY_PATH)/source_IPSocketLibrary/$(SYSTEM_TYPE)
 #NECSOFT_DRIVER_PATH = $(SPACEWIRERMAPLIBRARY_PATH)/driver/spc1_necsoft
 #SHIMAFUJI_DRIVER_PATH = $(SPACEWIRERMAPLIBRARY_PATH)/driver/spc1_shimafuji
 
@@ -65,7 +65,7 @@ SpaceWireCLI.cc \
 SpaceWireSSDTPModule.cc \
 SpaceWireIFImplementations.cc
 
-SPACEWIRELIBRARY_HEADER = $(addsuffix .hh, $(basename $(SPACEWIRELIBRARY_SOURCE)))
+SPACEWIRELIBRARY_HEADER = $(addsuffix .hh, $(basename $(SPACEWIRELIBRARY_SOURCE))) SpaceWire.hh RMAP.hh
 SPACEWIRELIBRARY_OBJECT = $(addsuffix .o, $(basename $(SPACEWIRELIBRARY_SOURCE)))
 
 
@@ -161,8 +161,9 @@ endif
 ##########################
 # Installation
 ##########################
-INSTALL_DIRECTORY = $(SPACEWIRERMAPLIBRARY_PATH)/executables/$(EXT)
-LIBRARY_INSTALL_DIRECTORY = $(SPACEWIRERMAPLIBRARY_PATH)/libraries/$(EXT)
+INSTALL_DIRECTORY = $(SPACEWIRERMAPLIBRARY_PATH)/executables/
+LIBRARY_INSTALL_DIRECTORY = $(SPACEWIRERMAPLIBRARY_PATH)/libraries/
+HEADER_INSTALL_DIRECTORY = $(SPACEWIRERMAPLIBRARY_PATH)/includes/
 
 
 ##########################
@@ -191,18 +192,34 @@ $(EXECUTABLES) : $(EXECUTABLE_HEADER) $(EXECUTABLE_OBJECT) $(LIBRARIES)
 	$(CXX) -g -O0 $(CPPFLAGS) $(CXXFLAGS) -c  $(CFLAGS) $<
 
 install:
-	mkdir -p $(INSTALL_DIRECTORY)
-	/bin/cp -f $(EXECUTABLES) $(INSTALL_DIRECTORY)
-	mkdir -p $(LIBRARY_INSTALL_DIRECTORY)
-	/bin/cp -f $(LIBRARIES) $(LIBRARY_INSTALL_DIRECTORY)
-	(cd $(LIBRARY_INSTALL_DIRECTORY); ranlib $(LIBRARIES))
+	#installing executables
+	@mkdir -p $(INSTALL_DIRECTORY)
+	@/bin/cp -f $(EXECUTABLES) $(INSTALL_DIRECTORY)
+	#installing libraries
+	@mkdir -p $(LIBRARY_INSTALL_DIRECTORY)
+	@/bin/cp -f $(LIBRARIES) $(LIBRARY_INSTALL_DIRECTORY)
+	@(cd $(LIBRARY_INSTALL_DIRECTORY); ranlib $(LIBRARIES))
+	#installing header files
+	@mkdir -p $(HEADER_INSTALL_DIRECTORY)
+	@for file in $(SPACEWIRELIBRARY_HEADER); do \
+	/bin/cp -f $(SPACEWIRELIBRARY_SOURCE_PATH)/$$file $(HEADER_INSTALL_DIRECTORY); \
+	done
+	@for file in $(THREADLIBRARY_HEADER); do \
+	/bin/cp -f $(THREADLIBRARY_SOURCE_PATH)/*.hh $(HEADER_INSTALL_DIRECTORY); \
+	done
+	@for file in $(IPSOCKETLIBRARY_HEADER); do \
+	/bin/cp -f $(IPSOCKETLIBRARY_SOURCE_PATH)/*.hh $(HEADER_INSTALL_DIRECTORY); \
+	done
+	#completed!
 
 clean:
 	/bin/rm -f $(LIBRARIES) $(EXECUTABLES) *.o
-#	/bin/rm -f $(INSTALL_DIRECTORY)/*
-#	/bin/rm -f $(LIBRARY_INSTALL_DIRECTORY)/*
+	/bin/rm -rf $(INSTALL_DIRECTORY)
+	/bin/rm -rf $(LIBRARY_INSTALL_DIRECTORY)
+	/bin/rm -rf $(HEADER_INSTALL_DIRECTORY)
 
 # History
 # 2008-05-xx file created (Takayuki Yuasa)
 # 2008-09-04 path settings were modified (Takayuki Yuasa)
 # 2010-01-18 Snow Leopard support (Takayuki Yuasa)
+# 2010-03-11 Header files are also installed into single folder (Takayuki Yuasa)

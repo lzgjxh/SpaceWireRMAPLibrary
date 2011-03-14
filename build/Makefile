@@ -9,8 +9,9 @@
 # set absolute path to the root directory
 # of SpaceWire/RMAP Library.
 
-#export SPACEWIRERMAPLIBRARY_PATH = /usr/local/SpaceWireRMAPLibrary
-export SPACEWIRERMAPLIBRARY_PATH = $(HOME)/workspace/SpaceWireRMAPLibrary_20110308/SpaceWireRMAPLibrary
+ifeq ($(SPACEWIRERMAPLIBRARY_PATH),)
+	export SPACEWIRERMAPLIBRARY_PATH = /usr/local/SpaceWireRMAPLibrary
+endif
 
 ##########################
 
