@@ -46,9 +46,19 @@ int IPSocket::receive(void* data,unsigned int length) throw(IPSocketException){
 			//cout << "IPSocket::receive() TimeOut" <<endl;
 			throw IPSocketException("IPSocket::receive() TimeOut");
 		}else{
-			cout << "TCP/IP Connection closed" << endl;
+			string err;
+			switch(errno){
+			case EBADF:err="EBADF";break;
+			case ECONNREFUSED:err="ECONNREFUSED";break;
+			case EFAULT:err="EFAULT";break;
+			case EINTR:err="EINTR";break;
+			case EINVAL:err="EINVAL";break;
+			case ENOMEM:err="ENOMEM";break;
+			case ENOTCONN:err="ENOTCONN";break;
+			case ENOTSOCK:err="ENOTSOCK";break;
+			}
+			cout << "TCP/IP Connection closed : " << err<< endl;
 			throw IPSocketException("IPSocket::receive() connection closed");
-			exit(-1);
 		}
 	}
 	return result;

@@ -650,6 +650,8 @@ void RMAPPacket::dumpReplyPacket(){
 	cout << dec << endl;
 }
 
+bool RMAPPacket::crcCheckModeDefault=true;
+
 /** History
  * 2008-05-xx file created (Takayuki Yuasa)
  */

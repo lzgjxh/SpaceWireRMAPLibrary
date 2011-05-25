@@ -30,7 +30,9 @@ SSDTPModule::~SSDTPModule(){
 }
 
 void SSDTPModule::send(vector<unsigned char>& data) throw(SSDTPException) {
+	sendmutex.lock();
 	send(&data);
+	sendmutex.unlock();
 }
 
 void SSDTPModule::send(vector<unsigned char>* data) throw(SSDTPException){
@@ -160,14 +162,17 @@ void SSDTPModule::send(unsigned char* data, unsigned int size) throw(SSDTPExcept
 
 
 vector<unsigned char> SSDTPModule::receive() throw(SSDTPException) {
+	receivemutex.lock();
 	vector<unsigned char> data;
 	receive(&data);
+	receivemutex.unlock();
 	return data;
 }
 
 int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 #ifdef SSDTP2
 
+	receivemutex.lock();
 	unsigned int size=0;
 	unsigned int hsize=0;
 	unsigned int flagment_size=0;
@@ -189,8 +194,10 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 				hsize+=result;
 			}
 		}catch(IPSocketException e){
+			receivemutex.unlock();
 			throw SSDTPException("SSDTPModule::receive() IP connection closed");
 		}catch(...){
+			receivemutex.unlock();
 			throw SSDTPException("SSDTPModule::receive() exception at flag and size part");
 		}
 
@@ -203,7 +210,19 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 			//unsigned char* data_pointer=&(data->at(0));
 			unsigned char* data_pointer=receivebuffer;
 			while(received_size!=flagment_size){
-				int result=datasocket->receive(data_pointer+size+received_size,flagment_size-received_size);
+				int result;
+				try {
+					result =
+							datasocket->receive(data_pointer + size + received_size, flagment_size - received_size);
+				} catch (IPSocketException e) {
+					cout << "SSDTPModule::receive() exception when receiving data" << endl;
+					e.dump();
+					cout << "rheader[0]=0x" << setw(2) << setfill('0') << hex << (unsigned int) rheader[0] << endl;
+					cout << "rheader[1]=0x" << setw(2) << setfill('0') << hex << (unsigned int) rheader[1] << endl;
+					cout << "size=" << dec << size << endl;
+					cout << "flagment_size=" << dec << flagment_size << endl;
+					cout << "received_size=" << dec << received_size << endl;
+				}
 				received_size+=result;
 			}
 			size+=received_size;
@@ -217,15 +236,18 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 					tmp_size+=result;
 				}
 			}catch(...){
+				receivemutex.unlock();
 				throw SSDTPException("SSDTPModule::receive() TimeCode part");
 			}
 			switch(rheader[0]){
 			case ControlFlag_SendTimeCode:
 				internal_timecode=timecode_and_reserved[0];
+				receivemutex.unlock();
 				throw SSDTPException("TimeCode");
 				break;
 			case ControlFlag_GotTimeCode:
 				internal_timecode=timecode_and_reserved[0];
+				receivemutex.unlock();
 				gotTimeCode(internal_timecode);
 				break;
 			}
@@ -241,8 +263,10 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 		goto receive_header;
 	}
 	if(rheader[0]==DataFlag_Complete_EEP){
+		receivemutex.unlock();
 		throw SSDTPException("EEP");
 	}
+	receivemutex.unlock();
 #endif
 
 

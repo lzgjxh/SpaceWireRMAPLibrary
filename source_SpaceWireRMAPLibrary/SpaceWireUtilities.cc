@@ -26,9 +26,9 @@ void SpaceWireUtilities::dumpPacket(ostream* ofs,vector<unsigned char>* data,uns
 			if(i*SpaceWireUtilities::DumpsPerLine+o<data->size()/wordwidth){
 				v=0;
 				for(unsigned int p=0;p<wordwidth;p++){
-					v=v+(int)data->at((i*SpaceWireUtilities::DumpsPerLine+o)*wordwidth+p);
+					v=v+(unsigned int)data->at((i*SpaceWireUtilities::DumpsPerLine+o)*wordwidth+p);
 				}
-				(*ofs) << "0x" << hex << setw(2*wordwidth) << setfill('0') << v << "  ";
+				(*ofs) << "0x" << right << hex << setw(2*wordwidth) << setfill('0') << v << "  ";
 			}
 		}
 		(*ofs) << endl;

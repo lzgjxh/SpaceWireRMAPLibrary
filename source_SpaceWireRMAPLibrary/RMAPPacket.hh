@@ -56,7 +56,7 @@ public:
 		headerCRC=0;
 		dataCRC=0;
 		
-		crcCheckMode=RMAPDefaultCRCCheckMode;
+		crcCheckMode=crcCheckModeDefault;
 		
 		commandOrReply=RMAPPacket::RMAPDefaultPacketType;
 		writeOrRead=RMAPPacket::RMAPDefaultWriteOrRead;
@@ -318,6 +318,11 @@ public:
 	}
 	bool getCRCCheckMode(){
 		return crcCheckMode;
+	}
+public:
+	static bool crcCheckModeDefault;
+	void setDefaultCRCCheckMode(bool trueIfCheck){
+		crcCheckModeDefault=trueIfCheck;
 	}
 private:
 	/** Creates an RMAP packet header. This method is invoked inside
