@@ -6,6 +6,7 @@
 #endif
 
 #include <stdlib.h>
+#include <cmath>
 using namespace std;
 
 ///////////////////////////////////
@@ -34,7 +35,7 @@ bool IPSocket::isConnected(){
 int IPSocket::send(void* data,unsigned int length) throw(IPSocketException){
 	int result=::send(socketdescriptor,data,length,0);
 	if(result<0){
-		throw IPSocketException("IPSocket::send() exception");
+		throw IPSocketException(IPSocketException::TCPSocketError);
 	}
 	return result;
 }
@@ -44,7 +45,7 @@ int IPSocket::receive(void* data,unsigned int length) throw(IPSocketException){
 	if(result<=0){
 		if(errno==EAGAIN || errno==EWOULDBLOCK){
 			//cout << "IPSocket::receive() TimeOut" <<endl;
-			throw IPSocketException("IPSocket::receive() TimeOut");
+			throw IPSocketException(IPSocketException::Timeout);
 		}else{
 			string err;
 			switch(errno){
@@ -58,7 +59,8 @@ int IPSocket::receive(void* data,unsigned int length) throw(IPSocketException){
 			case ENOTSOCK:err="ENOTSOCK";break;
 			}
 			cout << "TCP/IP Connection closed : " << err<< endl;
-			throw IPSocketException("IPSocket::receive() connection closed");
+			usleep(1000000);
+			throw IPSocketException(IPSocketException::Disconnected);
 		}
 	}
 	return result;
@@ -76,10 +78,15 @@ int IPSocket::getPort(){
 	return port;
 }
 
-void IPSocket::setTimeout(unsigned int durationInMilliSec){
+void IPSocket::setTimeout(double durationInMilliSec){
 	timeoutDurationInMilliSec=durationInMilliSec;
 	struct timeval tv;
-	tv.tv_sec = (unsigned int)(durationInMilliSec/1000.);
-	tv.tv_usec = (int)((durationInMilliSec/1000.)*1000);
+	tv.tv_sec = (unsigned int)(floor(durationInMilliSec/1000.));
+	tv.tv_usec = (int)((durationInMilliSec-floor(durationInMilliSec))*1000);
 	setsockopt(socketdescriptor, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof tv);
+
+}
+
+double IPSocket::getTimeoutDuration(){
+	return timeoutDurationInMilliSec;
 }

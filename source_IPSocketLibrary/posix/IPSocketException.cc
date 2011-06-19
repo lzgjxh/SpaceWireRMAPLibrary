@@ -4,6 +4,6 @@ using namespace std;
 
 IPSocketException::IPSocketException(){}
 
-IPSocketException::IPSocketException(string str){
+IPSocketException::IPSocketException(int str){
 	setStatus(str);
 }

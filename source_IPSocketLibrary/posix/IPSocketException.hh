@@ -8,17 +8,32 @@ using namespace std;
 
 class IPSocketException{
 private:
-	string status;
+	int status;
+public:
+	enum{
+		Disconnected,
+		Timeout,
+		TCPSocketError,
+		PortNumberError,
+		BindError,
+		ListenError,
+		AcceptException,
+		OpenException,
+		CreateException,
+		HostEntryError,
+		ConnectException,
+		Undefied
+	};
 public:
 	IPSocketException();
-	IPSocketException(string str);
+	IPSocketException(int status);
 	void dump(){
-		cout << status << endl;
+		cout << "IPSocketException status=" << status << endl;
 	}
-	void setStatus(string status){
+	void setStatus(int status){
 		this->status=status;
 	}
-	string getStatus(){
+	int getStatus(){
 		return status;
 	}
 };

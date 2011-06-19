@@ -36,12 +36,13 @@ public:
 	string getName(){
 		return name;
 	}
-	void setTimeout(unsigned int durationInMilliSec);
+	void setTimeout(double durationInMilliSec);
+	double getTimeoutDuration();
 protected:
 	int status;
 private:
 	string name;
-	int timeoutDurationInMilliSec;
+	double timeoutDurationInMilliSec;
 protected:
 	int socketdescriptor;
 	int port;

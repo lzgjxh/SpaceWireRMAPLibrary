@@ -24,13 +24,12 @@ bool SpaceWireIFOverIPClient::open() throw(SpaceWireException){
 	try{
 		datasocket=new IPClientSocket(iphostname,ipportnumber);
 		datasocket->open();
-		datasocket->setTimeout(5000);
+		datasocket->setTimeout(1000);
 	}catch(IPSocketException e){
-		if(e.getStatus()=="IPSocket::receive() TimeOut"){
-			throw SpaceWireException(SpaceWireException::TransferErrorTimeout);
+		if(e.getStatus()==SSDTPException::Timeout){
+			throw SpaceWireException(SpaceWireException::Timeout);
 		}else{
-			cout << "SpaceWireIFOverIPClient::open() exception" << endl;
-			exit(-1);
+			throw SpaceWireException(SpaceWireException::Disconnected);
 		}
 	}
 
@@ -75,7 +74,15 @@ void SpaceWireIFOverIPClient::send(vector<unsigned char>* packet) throw(SpaceWir
 		SpaceWireUtilities::dumpPacket(packet);
 	}
 #endif
-	ssdtp->send(packet);
+	try{
+		ssdtp->send(packet);
+	}catch(SSDTPException e){
+		if(e.getStatus()==SSDTPException::Timeout){
+			throw SpaceWireException(SpaceWireException::Timeout);
+		}else{
+			throw SpaceWireException(SpaceWireException::Disconnected);
+		}
+	}
 #ifdef DEBUG
 	cout << "SpaceWireIFOverIPClient::send() completed" << endl;
 #endif
@@ -97,8 +104,14 @@ vector<unsigned char> SpaceWireIFOverIPClient::receive() throw(SpaceWireExceptio
 #endif
 		return packet;
 	}catch(SSDTPException e){
+		if(e.getStatus()==SSDTPException::Timeout){
+			throw SpaceWireException(SpaceWireException::Timeout);
+		}
 		throw SpaceWireException(SpaceWireException::Disconnected);
 	}catch(IPSocketException e){
+		if(e.getStatus()==IPSocketException::Timeout){
+			throw SpaceWireException(SpaceWireException::Timeout);
+		}
 		throw SpaceWireException(SpaceWireException::Disconnected);
 	}
 }
@@ -118,8 +131,14 @@ void SpaceWireIFOverIPClient::receive(vector<unsigned char>* packet) throw(Space
 		}
 #endif
 	}catch(SSDTPException e){
+		if(e.getStatus()==SSDTPException::Timeout){
+			throw SpaceWireException(SpaceWireException::Timeout);
+		}
 		throw SpaceWireException(SpaceWireException::Disconnected);
 	}catch(IPSocketException e){
+		if(e.getStatus()==IPSocketException::Timeout){
+			throw SpaceWireException(SpaceWireException::Timeout);
+		}
 		throw SpaceWireException(SpaceWireException::Disconnected);
 	}
 }

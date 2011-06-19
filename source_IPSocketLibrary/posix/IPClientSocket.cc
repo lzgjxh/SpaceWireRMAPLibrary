@@ -17,7 +17,7 @@ IPClientSocket::~IPClientSocket(){}
 
 void IPClientSocket::open() throw(IPSocketException){
 	if(url.length()==0){
-		throw IPSocketException("IPClientSocket::open() exception");
+		throw IPSocketException(IPSocketException::OpenException);
 	}
 	try{
 		create();
@@ -46,7 +46,7 @@ bool IPClientSocket::isServerSocket(){
 void IPClientSocket::create() throw(IPSocketException){
 	int result=::socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
 	if(result<0){
-		throw IPSocketException("IPClientSocket::create() exception");
+		throw IPSocketException(IPSocketException::CreateException);
 	}else{
 		status=IPSocketCreated;
 		socketdescriptor=result;
@@ -65,13 +65,13 @@ void IPClientSocket::connect() throw(IPSocketException){
 	struct ::hostent* hostentry;
 	hostentry=::gethostbyname(url.c_str());
 	if(hostentry==NULL){
-		throw IPSocketException();
+		throw IPSocketException(IPSocketException::HostEntryError);
 	}else{
 		serveraddress.sin_addr.s_addr=*((unsigned long*)hostentry->h_addr_list[0]);
 	}
 	result=::connect(socketdescriptor,(struct ::sockaddr*)&serveraddress,sizeof(struct ::sockaddr_in));
 	if(result<0){
-		throw IPSocketException("IPClientSocket::connect() exception");
+		throw IPSocketException(IPSocketException::ConnectException);
 	}else{
 		status=IPSocketConnected;
 	}

@@ -144,6 +144,7 @@ private:
 	 * this RMAPEngine Transaction ID Control scheme.
 	 */
 	bool suspended;
+	bool stopped;
 
 	/** Flag which is used to determine whether
 	 * this RMAPEngine can receive packets that
@@ -210,6 +211,15 @@ public:
 	 * RMAPEngine_RequestProcessThread and RMAPEngine_ReplyProcessThread).
 	 */
 //	void suspendBy();
+
+
+	bool isStopped(){
+		return stopped;
+	}
+
+	bool isStarted(){
+		return !stopped;
+	}
 
 	/** Resumes the Transaction ID control shceme.
 	 */

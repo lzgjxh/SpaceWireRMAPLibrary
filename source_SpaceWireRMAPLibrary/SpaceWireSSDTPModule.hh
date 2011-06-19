@@ -19,15 +19,27 @@ using namespace std;
  */
 class SSDTPException{
 private:
-	string status;
+	int status;
+public:
+	enum{
+		DataSizeTooLarge,
+		Disconnected,
+		Timeout,
+		TimecodeReceived,
+		TCPSocketError,
+		EEP,
+		SequenceError,
+		NotImplemented,
+		Undefined
+	};
 public:
 	SSDTPException(){}
-	SSDTPException(string str){status=str;}
-	string getStatus(){
+	SSDTPException(int status){this->status=status;}
+	int getStatus(){
 		return status;
 	}
 	void dump(){
-		cout << status << endl;
+		cout << "SSDTPException status=" << status << endl;
 	}
 };
 

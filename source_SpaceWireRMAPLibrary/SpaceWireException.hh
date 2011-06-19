@@ -28,7 +28,8 @@ public:
 		DeviceDriverFailed,
 		NoDevice,
 		SendTimeCodeError,
-		GetTimeCodeError
+		GetTimeCodeError,
+		Timeout
 	} SpaceWireExceptionStates;
 private:
 	int status;

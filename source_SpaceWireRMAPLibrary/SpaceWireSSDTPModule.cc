@@ -46,15 +46,20 @@ void SSDTPModule::send(vector<unsigned char>* data) throw(SSDTPException){
 		//cout << "setSize:sheader[" << i << "] "<< (unsigned int)sheader[i] << endl;
 		size=size/0x100;
 	}
-	datasocket->send(sheader,12);
-	datasocket->send(&(data->at(0)),data->size());
+	try{
+		datasocket->send(sheader,12);
+		datasocket->send(&(data->at(0)),data->size());
+	}catch(...){
+		sendmutex.unlock();
+		throw SSDTPException(SSDTPException::Disconnected);
+	}
 	sendmutex.unlock();
 #endif
 
 #ifdef SSDTP1
 	sendmutex.lock();
 	if(data->size()>SSDTPModule::BufferSize){
-		throw SSDTPException("size too large");
+		throw SSDTPException(SSDTPException::DataSizeTooLarge);
 	}
 	int index=0;
 
@@ -76,7 +81,7 @@ void SSDTPModule::send(vector<unsigned char>* data) throw(SSDTPException){
 		try{
 			sentsize+=datasocket->send((void*)(sendbuffer+sentsize),ssize-sentsize);
 		}catch(...){
-			throw SSDTPException("SSDTPModule::send() exception");
+			throw SSDTPException(SSDTPException::Disconnected);
 		}
 	}
 	sendmutex.unlock();
@@ -94,15 +99,20 @@ void SSDTPModule::send(unsigned char* data, unsigned int size) throw(SSDTPExcept
 		sheader[i]=asize%0x100;
 		asize=asize/0x100;
 	}
-	datasocket->send(sheader,12);
-	datasocket->send(data,size);
+	try{
+		datasocket->send(sheader,12);
+		datasocket->send(data,size);
+	}catch(...){
+		sendmutex.unlock();
+		throw SSDTPException(SSDTPException::Disconnected);
+	}
 	sendmutex.unlock();
 #endif
 
 #ifdef SSDTP1
 	sendmutex.lock();
 	if(size>SSDTPModule::BufferSize){
-		throw SSDTPException("size too large");
+		throw SSDTPException(SSDTPException::DataSizeTooLarge);
 	}
 	int index=0;
 
@@ -124,7 +134,7 @@ void SSDTPModule::send(unsigned char* data, unsigned int size) throw(SSDTPExcept
 		try{
 			sentsize+=datasocket->send((void*)(sendbuffer+sentsize),ssize-sentsize);
 		}catch(...){
-			throw SSDTPException("SSDTPModule::send() exception");
+			throw SSDTPException(SSDTPException::Disconnected);
 		}
 	}
 	sendmutex.unlock();
@@ -195,10 +205,14 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 			}
 		}catch(IPSocketException e){
 			receivemutex.unlock();
-			throw SSDTPException("SSDTPModule::receive() IP connection closed");
+			if(e.getStatus()==IPSocketException::Timeout){
+				throw SSDTPException(SSDTPException::Timeout);
+			}else{
+				throw SSDTPException(SSDTPException::Disconnected);
+			}
 		}catch(...){
 			receivemutex.unlock();
-			throw SSDTPException("SSDTPModule::receive() exception at flag and size part");
+			throw SSDTPException(SSDTPException::Disconnected);
 		}
 
 		//data or control code part
@@ -237,13 +251,13 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 				}
 			}catch(...){
 				receivemutex.unlock();
-				throw SSDTPException("SSDTPModule::receive() TimeCode part");
+				throw SSDTPException(SSDTPException::TCPSocketError);
 			}
 			switch(rheader[0]){
 			case ControlFlag_SendTimeCode:
 				internal_timecode=timecode_and_reserved[0];
 				receivemutex.unlock();
-				throw SSDTPException("TimeCode");
+				throw SSDTPException(SSDTPException::TimecodeReceived);
 				break;
 			case ControlFlag_GotTimeCode:
 				internal_timecode=timecode_and_reserved[0];
@@ -264,7 +278,7 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 	}
 	if(rheader[0]==DataFlag_Complete_EEP){
 		receivemutex.unlock();
-		throw SSDTPException("EEP");
+		throw SSDTPException(SSDTPException::EEP);
 	}
 	receivemutex.unlock();
 #endif
@@ -291,7 +305,7 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 				hsize+=result;
 			}
 		}catch(...){
-			throw SSDTPException("SSDTPModule::receive() exception at flag receive part");
+			throw SSDTPException(SSDTPException::TCPSocketError);
 		}
 
 		if(rheader[0]==ControlFlag){
@@ -315,7 +329,7 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 			switch(controlcode[0]){
 			case 0x01: //Send Time Code
 				internal_timecode=controlcode[1];
-				throw SSDTPException("TimeCode");
+				throw SSDTPException(SSDTPException::TimecodeReceived);
 				break;
 			case 0x02: //Got Time Code
 				internal_timecode=controlcode[1];
@@ -369,10 +383,10 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 	try{
 		receivedsize=datasocket->receive(receivebuffer,1);
 	}catch(...){
-		throw SSDTPException("SSDTPModule::receive() exception at flag receive part");
+		throw SSDTPException(SSDTPException::SequenceError);
 	}
 	if(receivedsize==0){
-		throw SSDTPException("data or control flag not received");
+		throw SSDTPException(SSDTPException::SequenceError);
 	}
 
 	receivedsize=0;
@@ -383,7 +397,7 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 			try{
 				receivedsize+=datasocket->receive(receivebuffer+receivedsize,SSDTPModule::LengthOfSizePart-receivedsize);
 			}catch(...){
-				throw SSDTPException("SSDTPModule::receive() exception at size receive part");
+				throw SSDTPException(SSDTPException::SequenceError);
 			}
 		}
 		receivebuffer[SSDTPModule::LengthOfSizePart]=0x00;
@@ -395,22 +409,22 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 			try{
 				receivedsize+=datasocket->receive(receivebuffer+receivedsize,size-receivedsize);
 			}catch(...){
-				throw SSDTPException("SSDTPModule::receive() exception at data receive part");
+				throw SSDTPException(SSDTPException::SequenceError);
 			}
 		}
 		data->resize(size);
 	}else{
 		receivedsize=datasocket->receive(receivebuffer,1);
 		if(receivebuffer[0]==SSDTPModule::EEP){
-			throw SSDTPException("EEP received");
+			throw SSDTPException(SSDTPException::EEP);
 		}else if(receivebuffer[0]==SSDTPModule::Timecode){
 			try{
 				receivedsize=datasocket->receive(receivebuffer,1);
 			}catch(...){
-				throw SSDTPException("SSDTPModule::receive() exception at TimeCode receive part");
+				throw SSDTPException(SSDTPException::SequenceError);
 			}
 			internal_timecode=receivebuffer[0];
-			throw SSDTPException("TimeCode");
+			throw SSDTPException(SSDTPException::TimecodeReceived);
 		}
 	}
 #endif
@@ -441,13 +455,13 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 			exit(-1);
 #endif
 #ifdef SYSTEM_TYPE_T_KERNEL
-			throw SSDTPException("SSDTPModule::receive() exception at flag receive part");
+			throw SSDTPException(SSDTPException::SequenceError);
 #endif
 		}catch(...){
-			throw SSDTPException("SSDTPModule::receive() exception at flag receive part");
+			throw SSDTPException(SSDTPException::SequenceError);
 		}
 		if(receivedsize<=0){
-			throw SSDTPException("data or control flag not received");
+			throw SSDTPException(SSDTPException::SequenceError);
 		}
 	}
 
@@ -510,7 +524,7 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 						r_state=1;
 					}else if(receivebuffer[rbuf_index]==SSDTPModule::EEP){
 						rbuf_index++;
-						throw SSDTPException("EEP received");
+						throw SSDTPException(SSDTPException::EEP);
 					}
 				}else{
 					goto receive_loop;
@@ -551,7 +565,7 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 }
 
 void SSDTPModule::sendEEP() throw(SSDTPException) {
-	throw SSDTPException("not implemented");
+	throw SSDTPException(SSDTPException::NotImplemented);
 }
 
 void SSDTPModule::sendTimeCode(unsigned char timecode) throw(SSDTPException) {
@@ -652,7 +666,7 @@ void SSDTPModule::setTxDivCount(unsigned char txdivcount){
 	sendmutex.unlock();
 #endif
 #ifdef SSDTP1
-	throw SSDTPException("setTxDivCount() is not implemented in SSDTP1 protocol.")
+	throw SSDTPException(SSDTPException::NotImplemented)
 #endif
 }
 

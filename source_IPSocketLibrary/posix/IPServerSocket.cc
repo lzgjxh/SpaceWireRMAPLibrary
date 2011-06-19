@@ -14,7 +14,7 @@ IPServerSocket::~IPServerSocket(){}
 
 void IPServerSocket::open() throw(IPSocketException){
 	if(getPort()<0){
-		throw IPSocketException("IPServerSocket::open() exception");
+		throw IPSocketException(IPSocketException::PortNumberError);
 	}
 	create();
 	bind();
@@ -33,7 +33,7 @@ bool IPServerSocket::isServerSocket(){
 void IPServerSocket::create() throw(IPSocketException){
 	int result=::socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
 	if(result<0){
-		throw IPSocketException("IPServerSocket::create() exception");
+		throw IPSocketException(IPSocketException::TCPSocketError);
 	}else{
 		status=IPSocketCreated;
 		socketdescriptor=result;
@@ -50,7 +50,7 @@ void IPServerSocket::bind() throw(IPSocketException){
 	setsockopt(socketdescriptor,SOL_SOCKET,SO_REUSEADDR,(const char *)&yes,sizeof(yes));
 	int result=::bind(socketdescriptor,(struct ::sockaddr*)&serveraddress,sizeof(struct ::sockaddr_in));
 	if(result<0){
-		throw IPSocketException("IPServerSocket::bind() exception");
+		throw IPSocketException(IPSocketException::BindError);
 	}else{
 		status=IPSocketBound;
 	}
@@ -59,7 +59,7 @@ void IPServerSocket::bind() throw(IPSocketException){
 void IPServerSocket::listen() throw(IPSocketException){
 	int result=::listen(socketdescriptor,maxofconnections);
 	if(result<0){
-		throw IPSocketException("IPServerSocket::listen() exception");
+		throw IPSocketException(IPSocketException::ListenError);
 	}else{
 		status=IPSocketListening;
 	}
@@ -72,7 +72,7 @@ IPServerAcceptedSocket* IPServerSocket::accept() throw(IPSocketException){
 	if(result<0){
 		cout << "result:" << (result>>16) << endl;
 		cout << "sockaddress desc.:" << socketdescriptor << endl; 
-		throw IPSocketException("IPServerSocket::accept() exception");
+		throw IPSocketException(IPSocketException::AcceptException);
 	}else{
 		IPServerAcceptedSocket* acceptedsocket=new IPServerAcceptedSocket();
 		acceptedsocket->setAddress(&clientaddress);
@@ -90,7 +90,7 @@ IPServerAcceptedSocket::IPServerAcceptedSocket() : IPSocket() {}
 IPServerAcceptedSocket::~IPServerAcceptedSocket(){}
 
 void IPServerAcceptedSocket::open() throw(IPSocketException){
-	throw IPSocketException("IPServerAcceptedSocket::open() exception");
+	throw IPSocketException(IPSocketException::OpenException);
 }
 
 void IPServerAcceptedSocket::close(){
