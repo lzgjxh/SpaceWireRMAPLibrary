@@ -181,8 +181,6 @@ vector<unsigned char> SSDTPModule::receive() throw(SSDTPException) {
 
 int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 #ifdef SSDTP2
-
-	receivemutex.lock();
 	unsigned int size=0;
 	unsigned int hsize=0;
 	unsigned int flagment_size=0;
@@ -193,13 +191,13 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 	rheader[0]=0xFF;
 	rheader[1]=0x00;
 	while(rheader[0]!=DataFlag_Complete_EOP && rheader[0]!=DataFlag_Complete_EEP){
+		receivemutex.lock();
 		hsize=0;
 		flagment_size=0;
 		received_size=0;
 		//flag and size part
 		try{
 			while(hsize!=12){
-				//cerr << "receive header " << hsize << endl;cout.flush();
 				int result=datasocket->receive(rheader+hsize,12-hsize);
 				hsize+=result;
 			}
@@ -265,6 +263,7 @@ int SSDTPModule::receive(vector<unsigned char>* data) throw(SSDTPException){
 				gotTimeCode(internal_timecode);
 				break;
 			}
+			cout << "#11" << endl;
 		}else{
 			cout << "SSDTP fatal error with flag value of 0x" << hex << (unsigned int)rheader[0] << dec << endl;
 			exit(-1);
